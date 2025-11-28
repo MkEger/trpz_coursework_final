@@ -23,11 +23,12 @@ cd Text-editor_1
    - Press **F5** to build and run with debugging
    - Or **Ctrl+F5** to run without debugging
 
-### MySQL Database Configuration:
+## MySQL Database Configuration:
 
 **Note:** MySQL database is optional for the "Recent Files" feature. The application works without MySQL configuration.
 
-#### To enable database functionality:
+### To enable database functionality:
+
 1. **Remove the `MySqlDatabaseHelper`** from the project
 2. **Or configure the connection string in the constructor:**
 
@@ -45,8 +46,77 @@ private MySqlConnection GetConnection()
 }
 ```
 
-#### Connection parameters:
+### Connection parameters:
 - **Server**: MySQL server address (usually `localhost`)
 - **Database**: Database name (create `texteditor_db`)
 - **Uid**: MySQL username (usually `root`)
 - **Pwd**: Password for MySQL user
+
+## Features
+
+### ?? Core Editor Features
+- **Multi-format support**: Text, Markdown, HTML, CSS, JavaScript, C#
+- **Syntax highlighting** for different programming languages
+- **File management**: New, Open, Save, Save As operations
+- **Find and Replace** with advanced options
+- **Undo/Redo** functionality
+- **Customizable themes** (Light, Dark, Custom)
+
+### ?? Code Snippets
+- **Smart code snippets** for different programming languages
+- **Custom snippet creation** and management
+- **Trigger-based insertion** (e.g., type `class` + Tab)
+- **Variable expansion** (`$DATE`, `$TIME`, `$USER`)
+- **Usage statistics** and most-used snippets tracking
+- **Database persistence** for snippets
+
+### ?? Bookmarks System
+- **Line-based bookmarks** with descriptions
+- **Quick navigation** between bookmarks
+- **Bookmark persistence** across sessions
+- **Visual bookmark indicators**
+- **Document-specific bookmarks**
+
+### ??? Recent Files Management
+- **Recently opened files** tracking
+- **Quick access** to recent documents
+- **File metadata** storage (size, modified date)
+- **MySQL database integration** for persistence
+
+### ?? Advanced Features
+- **Macro recording and playback**
+- **Multiple text encodings** support
+- **Customizable editor settings**
+- **Extension system** for additional functionality
+- **Database integration** for data persistence
+
+## Project Structure
+
+```
+Text editor_1/
+??? Models/              # Data models (CodeSnippet, Bookmark, Document, etc.)
+??? Services/            # Business logic services
+??? Repositories/        # Data access layer
+?   ??? Interfaces/      # Repository interfaces
+?   ??? Implementations/ # MySQL implementations
+??? Utils/               # Utility classes
+??? Forms/               # Windows Forms UI
+??? Resources/           # Application resources
+```
+
+## Technologies Used
+
+- **Framework**: .NET Framework 4.7.2
+- **UI**: Windows Forms
+- **Database**: MySQL 8.0+
+- **ORM**: Custom repository pattern
+- **Language**: C# 7.3
+- **IDE**: Visual Studio 2017/2019/2022
+
+## Contributing
+
+This is a coursework project for educational purposes. Feel free to fork and modify for learning.
+
+## License
+
+This project is for educational purposes only.

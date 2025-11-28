@@ -1,12 +1,5 @@
 # Text Editor MK - Professional Course Project
 
-## ?? Getting Started
-
-### System Requirements:
-- **Windows OS** (Windows 7 SP1 or higher)
-- **.NET Framework 4.7.2** or newer version
-- **Visual Studio 2017/2019/2022** 
-- **MySQL 8.0+** (optional)
 
 ### Quick Start:
 

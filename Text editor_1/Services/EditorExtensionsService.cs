@@ -1,21 +1,28 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using TextEditorMK.Models;
+using TextEditorMK.Repositories.Interfaces;
+using TextEditorMK.Repositories.Implementations;
 
 namespace TextEditorMK.Services
 {
-
     public class EditorExtensionsService
     {
         private readonly RichTextBox _textBox;
+        private readonly ISnippetRepository _snippetRepository;
+        private readonly IBookmarkRepository _bookmarkRepository;
         
+        // Інформація про поточний документ
+        public string CurrentDocumentName { get; private set; } = "Untitled";
+        public string CurrentDocumentPath { get; private set; } = string.Empty;
 
         public MacroService Macros { get; private set; }
         public SnippetService Snippets { get; private set; }
         public BookmarkService Bookmarks { get; private set; }
         
-        // Поточні налаштування
+        // Поточна мова програмування
         public string CurrentLanguage { get; private set; } = "text";
         public bool IsExtensionsEnabled { get; set; } = true;
 
@@ -25,9 +32,11 @@ namespace TextEditorMK.Services
         public event EventHandler<ExtensionEventArgs> SnippetInserted;
         public event EventHandler<ExtensionEventArgs> BookmarkToggled;
 
-        public EditorExtensionsService(RichTextBox textBox)
+        public EditorExtensionsService(RichTextBox textBox, ISnippetRepository snippetRepository = null, IBookmarkRepository bookmarkRepository = null)
         {
             _textBox = textBox ?? throw new ArgumentNullException(nameof(textBox));
+            _snippetRepository = snippetRepository;
+            _bookmarkRepository = bookmarkRepository;
             InitializeServices();
         }
 
@@ -36,10 +45,14 @@ namespace TextEditorMK.Services
             try
             {
                 Macros = new MacroService(_textBox);
-                Snippets = new SnippetService(_textBox);
-                Bookmarks = new BookmarkService(_textBox);
+                
+                // Ініціалізуємо Snippets з репозиторієм або без
+                Snippets = new SnippetService(_textBox, _snippetRepository);
+                
+                // Ініціалізуємо Bookmarks з репозиторієм або без
+                Bookmarks = new BookmarkService(_textBox, _bookmarkRepository);
 
-                System.Diagnostics.Debug.WriteLine("? Editor extensions initialized successfully");
+                System.Diagnostics.Debug.WriteLine($"? Editor extensions initialized with DB support: {_snippetRepository != null && _bookmarkRepository != null}");
             }
             catch (Exception ex)
             {
@@ -95,7 +108,7 @@ namespace TextEditorMK.Services
                 }
 
                 SetLanguage(language);
-                System.Diagnostics.Debug.WriteLine($"? Language detected: {language} from {extension}");
+                System.Diagnostics.Debug.WriteLine($"?? Language detected: {language} from {extension}");
             }
             catch (Exception ex)
             {
@@ -107,7 +120,17 @@ namespace TextEditorMK.Services
         public void SetLanguage(string language)
         {
             CurrentLanguage = language?.ToLower() ?? "text";
-            System.Diagnostics.Debug.WriteLine($"? Language set to: {CurrentLanguage}");
+            System.Diagnostics.Debug.WriteLine($"?? Language set to: {CurrentLanguage}");
+        }
+
+        /// <summary>
+        /// Оновлює інформацію про поточний документ
+        /// </summary>
+        public void SetCurrentDocument(string documentName, string documentPath = null)
+        {
+            CurrentDocumentName = string.IsNullOrEmpty(documentName) ? "Untitled" : documentName;
+            CurrentDocumentPath = documentPath ?? string.Empty;
+            System.Diagnostics.Debug.WriteLine($"?? Document set to: {CurrentDocumentName}");
         }
 
 
@@ -177,6 +200,13 @@ namespace TextEditorMK.Services
             try
             {
                 int currentLine = GetCurrentLineNumber();
+                
+                // Передаємо інформацію про документ в BookmarkService
+                if (Bookmarks is BookmarkService bookmarkService)
+                {
+                    bookmarkService.SetCurrentDocument(CurrentDocumentName, CurrentDocumentPath);
+                }
+                
                 Bookmarks.ToggleBookmark(currentLine);
                 OnBookmarkToggled(currentLine);
             }
@@ -298,9 +328,12 @@ namespace TextEditorMK.Services
 
         public override string ToString()
         {
-            return $"Language: {CurrentLanguage} | Macros: {TotalMacros} | " +
-                   $"Snippets: {TotalSnippets} | Bookmarks: {TotalBookmarks}" +
-                   (IsRecordingMacro ? $" | Recording: {CurrentMacroName}" : "");
+            return $"Language: {CurrentLanguage}\n" +
+                   $"Extensions Enabled: {IsExtensionsEnabled}\n" +
+                   $"Macros: {TotalMacros}\n" +
+                   $"Snippets: {TotalSnippets}\n" +
+                   $"Bookmarks: {TotalBookmarks}\n" +
+                   $"Recording: {IsRecordingMacro} {(IsRecordingMacro ? $"({CurrentMacroName})" : "")}";
         }
     }
 }

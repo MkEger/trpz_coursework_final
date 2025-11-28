@@ -116,7 +116,34 @@ namespace Text_editor_1
         {
             try
             {
-                _extensionsService = new TextEditorMK.Services.EditorExtensionsService(richTextBox1);
+                System.Diagnostics.Debug.WriteLine("🔧 InitializeExtensionsService called");
+                
+                // Створюємо репозиторії для сніппетів і букмарків
+                ISnippetRepository snippetRepository = null;
+                IBookmarkRepository bookmarkRepository = null;
+
+                try
+                {
+                    // Створюємо обидва репозиторії
+                    snippetRepository = new MySqlSnippetRepository();
+                    bookmarkRepository = new MySqlBookmarkRepository();
+                    System.Diagnostics.Debug.WriteLine("✅ Created MySQL repositories for both snippets and bookmarks");
+                }
+                catch (Exception repoEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"⚠️ Failed to create MySQL repositories for extensions: {repoEx.Message}");
+                    System.Diagnostics.Debug.WriteLine("📋 Extensions will use in-memory storage only");
+                    
+                    // Якщо MySQL недоступна, використовуємо null (fallback на кеш)
+                    snippetRepository = null;
+                    bookmarkRepository = null;
+                }
+
+                // Ініціалізуємо ExtensionsService з репозиторіями
+                _extensionsService = new TextEditorMK.Services.EditorExtensionsService(
+                    richTextBox1, 
+                    snippetRepository,
+                    bookmarkRepository);
                 
 
                 _extensionsService.MacroStarted += OnExtensionEvent;
@@ -124,11 +151,12 @@ namespace Text_editor_1
                 _extensionsService.SnippetInserted += OnExtensionEvent;
                 _extensionsService.BookmarkToggled += OnExtensionEvent;
                 
-                System.Diagnostics.Debug.WriteLine(" Extensions service initialized successfully");
+                string storageInfo = snippetRepository != null ? "MySQL database" : "in-memory cache";
+                System.Diagnostics.Debug.WriteLine($"✅ Extensions service initialized successfully with {storageInfo}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($" Failed to initialize extensions service: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Failed to initialize extensions service: {ex.Message}");
                 MessageBox.Show($"Warning: Advanced features may not work properly.\nError: {ex.Message}", 
                     "Extensions Initialization Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
@@ -157,6 +185,55 @@ namespace Text_editor_1
             UpdateTitle();
             LoadSettings();
             UpdateStatusBar();
+            
+            // ВИПРАВЛЕННЯ: Скидаємо виділення та встановлюємо правильні кольори
+            FixInitialTextColors();
+        }
+
+        private void FixInitialTextColors()
+        {
+            try
+            {
+                if (richTextBox1 != null)
+                {
+                    // Отримуємо поточну тему
+                    var currentTheme = _currentSettings?.Theme != null ? 
+                        EditorTheme.GetByName(_currentSettings.Theme) : EditorTheme.Light;
+                    
+                    System.Diagnostics.Debug.WriteLine($"🎨 Fixing initial text colors for theme: {currentTheme?.Name ?? "Light"}");
+                    
+                    // Зберігаємо поточну позицію курсора
+                    int cursorPosition = richTextBox1.SelectionStart;
+                    
+                    // Тимчасово відключаємо подію TextChanged
+                    richTextBox1.TextChanged -= richTextBox1_TextChanged;
+                    
+                    // Виділяємо весь текст і скидаємо форматування
+                    richTextBox1.SelectAll();
+                    richTextBox1.SelectionColor = currentTheme.TextBoxForeColor;
+                    richTextBox1.SelectionBackColor = currentTheme.TextBoxBackColor;
+                    richTextBox1.SelectionFont = richTextBox1.Font;
+                    
+                    // Скидаємо виділення
+                    richTextBox1.SelectionStart = cursorPosition;
+                    richTextBox1.SelectionLength = 0;
+                    
+                    // Встановлюємо правильні кольори для RichTextBox
+                    richTextBox1.BackColor = currentTheme.TextBoxBackColor;
+                    richTextBox1.ForeColor = currentTheme.TextBoxForeColor;
+                    
+                    // Повертаємо подію TextChanged
+                    richTextBox1.TextChanged += richTextBox1_TextChanged;
+                    
+                    System.Diagnostics.Debug.WriteLine($"✅ Fixed initial text colors - Back: {currentTheme.TextBoxBackColor}, Fore: {currentTheme.TextBoxForeColor}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Error fixing initial text colors: {ex.Message}");
+                // Відновлюємо подію в разі помилки
+                richTextBox1.TextChanged += richTextBox1_TextChanged;
+            }
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -373,7 +450,38 @@ namespace Text_editor_1
 
                 if (richTextBox1 != null)
                 {
+                    // Тимчасово відключаємо події для запобігання проблем з кольорами
+                    richTextBox1.TextChanged -= richTextBox1_TextChanged;
+                    
                     richTextBox1.Clear();
+                    
+                    // Відразу встановлюємо правильні кольори теми
+                    var currentTheme = _currentSettings?.Theme != null ? 
+                        EditorTheme.GetByName(_currentSettings.Theme) : EditorTheme.Light;
+                    
+                    richTextBox1.BackColor = currentTheme.TextBoxBackColor;
+                    richTextBox1.ForeColor = currentTheme.TextBoxForeColor;
+                    
+                    // Очищуємо будь-яке форматування
+                    richTextBox1.SelectAll();
+                    richTextBox1.SelectionColor = currentTheme.TextBoxForeColor;
+                    richTextBox1.SelectionBackColor = currentTheme.TextBoxBackColor;
+                    richTextBox1.SelectionFont = richTextBox1.Font;
+                    
+                    // Скидаємо виділення
+                    richTextBox1.SelectionStart = 0;
+                    richTextBox1.SelectionLength = 0;
+                    
+                    // Відновлюємо події
+                    richTextBox1.TextChanged += richTextBox1_TextChanged;
+                    
+                    System.Diagnostics.Debug.WriteLine($"✅ CreateNewDocument: Applied theme colors - Back: {currentTheme.TextBoxBackColor}, Fore: {currentTheme.TextBoxForeColor}");
+                }
+
+                // Оновлюємо інформацію про документ в ExtensionsService
+                if (_extensionsService != null && _currentDocument != null)
+                {
+                    _extensionsService.SetCurrentDocument(_currentDocument.FileName, _currentDocument.FilePath);
                 }
 
                 UpdateTitle();
@@ -381,6 +489,8 @@ namespace Text_editor_1
             }
             catch (Exception ex)
             {
+                // Відновлюємо події в разі помилки
+                richTextBox1.TextChanged += richTextBox1_TextChanged;
                 throw new InvalidOperationException($"Failed to create new document: {ex.Message}", ex);
             }
         }
@@ -408,6 +518,8 @@ namespace Text_editor_1
                         if (_extensionsService != null)
                         {
                             _extensionsService.DetectLanguageFromFile(openDialog.FileName);
+                            // Оновлюємо інформацію про документ
+                            _extensionsService.SetCurrentDocument(_currentDocument.FileName, _currentDocument.FilePath);
                         }
                         
                         if (Path.GetExtension(openDialog.FileName).ToLower() == ".md")
@@ -495,14 +607,28 @@ namespace Text_editor_1
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine("🔄 ShowRecentFiles called from MainForm");
+                System.Diagnostics.Debug.WriteLine($"📊 Repository status: RecentFile={_recentFileRepository != null}, Document={_documentRepository != null}, Encoding={_encodingRepository != null}");
+                
                 var recentForm = new RecentFilesForm(_recentFileRepository, _documentRepository, _encodingRepository, _currentSettings);
-                if (recentForm.ShowDialog() == DialogResult.OK && recentForm.SelectedDocument != null)
+                System.Diagnostics.Debug.WriteLine("✅ RecentFilesForm created successfully");
+                
+                var dialogResult = recentForm.ShowDialog();
+                System.Diagnostics.Debug.WriteLine($"📋 Dialog result: {dialogResult}");
+                
+                if (dialogResult == DialogResult.OK && recentForm.SelectedDocument != null)
                 {
+                    System.Diagnostics.Debug.WriteLine($"📄 Selected document: {recentForm.SelectedDocument.FileName}");
                     LoadDocument(recentForm.SelectedDocument);
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("❌ No document selected or dialog cancelled");
                 }
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"❌ Error in ShowRecentFiles: {ex.Message}");
                 throw new InvalidOperationException($"Failed to show recent files: {ex.Message}", ex);
             }
         }
@@ -538,6 +664,13 @@ namespace Text_editor_1
             if (richTextBox1 != null)
             {
                 richTextBox1.Text = document.Content;
+            }
+
+            // Оновлюємо інформацію про документ в ExtensionsService
+            if (_extensionsService != null)
+            {
+                _extensionsService.SetCurrentDocument(_currentDocument.FileName, _currentDocument.FilePath);
+                _extensionsService.DetectLanguageFromFile(_currentDocument.FilePath);
             }
 
             UpdateTitle();
@@ -1006,7 +1139,7 @@ namespace Text_editor_1
                 if (trimmedLine.StartsWith("#") && trimmedLine.Length > 1 && trimmedLine[1] == ' ' || 
                     (trimmedLine.StartsWith("##") && (trimmedLine.Length == 2 || trimmedLine[2] == ' ')))
                 {
-                    // Підрахувати рівень заголовка
+                    // Підрахунок рівня заголовка
                     int headerLevel = 0;
                     for (int i = 0; i < trimmedLine.Length && trimmedLine[i] == '#'; i++)
                         headerLevel++;
@@ -1230,7 +1363,6 @@ namespace Text_editor_1
         public string GetCurrentDocumentContent() => _currentDocument?.Content ?? string.Empty;
         
         public Document GetCurrentDocument() => _currentDocument;
-
 
         public DocumentServiceStatistics GetDocumentStatistics()
         {
@@ -1462,33 +1594,54 @@ namespace Text_editor_1
 
             try
             {
+                System.Diagnostics.Debug.WriteLine($"🔄 ResetTextFormatting called for theme: {theme.Name}");
+                
                 int cursorPosition = richTextBox1.SelectionStart;
                 string currentText = richTextBox1.Text;
                 
+                // Тимчасово відключаємо події
+                richTextBox1.TextChanged -= richTextBox1_TextChanged;
                 richTextBox1.SuspendLayout();
                 
+                // Очищуємо та встановлюємо нові кольори
                 richTextBox1.Clear();
-                
                 richTextBox1.BackColor = theme.TextBoxBackColor;
                 richTextBox1.ForeColor = theme.TextBoxForeColor;
-                richTextBox1.SelectionBackColor = theme.SelectionBackColor;
                 
+                // Встановлюємо текст назад
                 richTextBox1.Text = currentText;
                 
+                // Скидаємо всі форматування до дефолтних значень теми
+                richTextBox1.SelectAll();
+                richTextBox1.SelectionColor = theme.TextBoxForeColor;
+                richTextBox1.SelectionBackColor = theme.TextBoxBackColor;
+                richTextBox1.SelectionFont = richTextBox1.Font;
+                
+                // Відновлюємо курсор
                 if (cursorPosition <= richTextBox1.Text.Length)
                 {
                     richTextBox1.SelectionStart = cursorPosition;
                 }
                 richTextBox1.SelectionLength = 0;
                 
+                // Відновлюємо події
                 richTextBox1.ResumeLayout();
+                richTextBox1.TextChanged += richTextBox1_TextChanged;
                 
-                System.Diagnostics.Debug.WriteLine("Text formatting reset completed");
+                System.Diagnostics.Debug.WriteLine($"✅ Text formatting reset completed for theme: {theme.Name}");
+                System.Diagnostics.Debug.WriteLine($"🎨 Colors set - Back: {theme.TextBoxBackColor}, Fore: {theme.TextBoxForeColor}");
             }
             catch (Exception ex)
             {
-                richTextBox1.ResumeLayout();
-                System.Diagnostics.Debug.WriteLine($"Text formatting reset error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Text formatting reset error: {ex.Message}");
+                
+                // Відновлюємо події в разі помилки
+                try
+                {
+                    richTextBox1.ResumeLayout();
+                    richTextBox1.TextChanged += richTextBox1_TextChanged;
+                }
+                catch { }
             }
         }
 

@@ -62,6 +62,7 @@ namespace Text_editor_1
             foreach (var bookmark in bookmarks)
             {
                 var item = new ListViewItem(bookmark.LineNumber.ToString());
+                item.SubItems.Add(string.IsNullOrEmpty(bookmark.DocumentName) ? "Unknown" : bookmark.DocumentName);
                 item.SubItems.Add(bookmark.Description);
                 item.SubItems.Add(bookmark.CreatedDate.ToString("HH:mm:ss"));
                 item.Tag = bookmark;

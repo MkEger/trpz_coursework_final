@@ -135,14 +135,18 @@
     <Compile Include="RecentFilesForm.Designer.cs">
       <DependentUpon>RecentFilesForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Repositories\Implementations\MySqlBookmarkRepository.cs" />
+    <Compile Include="Repositories\Implementations\MySqlSnippetRepository.cs" />
     <Compile Include="Repositories\Implomentations\DocumentRepository.cs" />
     <Compile Include="Repositories\Implomentations\EditorSettingsRepository.cs" />
     <Compile Include="Repositories\Implomentations\EncodingRepository.cs" />
     <Compile Include="Repositories\Implomentations\RecentFileRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IBookmarkRepository.cs" />
     <Compile Include="Repositories\Interfaces\IEditorSettingsRepository.cs" />
     <Compile Include="Repositories\Interfaces\IRecentFileRepository.cs" />
     <Compile Include="Repositories\Interfaces\IDocumentRepository.cs" />
     <Compile Include="Repositories\Interfaces\IEncodingRepository.cs" />
+    <Compile Include="Repositories\Interfaces\ISnippetRepository.cs" />
     <Compile Include="Repositories\MySqlDocumentRepository.cs" />
     <Compile Include="Repositories\MySqlRecentFileRepository.cs" />
     <Compile Include="Services\BookmarkService.cs" />
@@ -168,7 +172,7 @@
     <Compile Include="SnippetsForm.Designer.cs">
       <DependentUpon>SnippetsForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Tests\ExtensionsServiceTest.cs" />
+    <Compile Include="Utils\DatabaseCleaner.cs" />
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -188,6 +192,9 @@
     <EmbeddedResource Include="SettingsForm.resx">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="SnippetsForm.resx">
+      <DependentUpon>SnippetsForm.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -199,9 +206,13 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <None Include="README.md" />
+    <None Include="test_markdown.md" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="test_file_1.txt" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -20,14 +20,17 @@ namespace TextEditorMK.Data
         {
             try
             {
-               
+                // Створюємо базу даних якщо не існує
                 TestAndCreateDatabase();
 
                 using (var connection = new MySqlConnection(_connectionString))
                 {
                     connection.Open();
 
+                    // Створюємо всі необхідні таблиці
+                    CreateTablesIfNotExists(connection);
                  
+                    // Заповнюємо таблиці початковими даними
                     SeedDataIfEmpty(connection);
 
                     MessageBox.Show("Database connected successfully! Your data is preserved.", "MySQL Ready",
@@ -44,7 +47,7 @@ namespace TextEditorMK.Data
 
         private void TestAndCreateDatabase()
         {
-            
+            // Підключаємся без вказівки бази даних для створення
             string connectionWithoutDb = "Server=localhost;Port=3306;Uid=root;Pwd=root;";
 
             using (var connection = new MySqlConnection(connectionWithoutDb))
@@ -59,6 +62,89 @@ namespace TextEditorMK.Data
             }
         }
 
+        private void CreateTablesIfNotExists(MySqlConnection connection)
+        {
+            // Створюємо таблицю для кодувань тексту
+            string createTextEncodingsTable = @"
+                CREATE TABLE IF NOT EXISTS TextEncodings (
+                    Id INT AUTO_INCREMENT PRIMARY KEY,
+                    Name VARCHAR(100) NOT NULL,
+                    CodePage VARCHAR(50) NOT NULL,
+                    IsDefault BOOLEAN DEFAULT FALSE,
+                    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY unique_name (Name)
+                ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+
+            using (var command = new MySqlCommand(createTextEncodingsTable, connection))
+            {
+                command.ExecuteNonQuery();
+            }
+
+            // Створюємо таблицю для налаштувань редактора
+            string createEditorSettingsTable = @"
+                CREATE TABLE IF NOT EXISTS EditorSettings (
+                    Id INT AUTO_INCREMENT PRIMARY KEY,
+                    FontFamily VARCHAR(100) DEFAULT 'Consolas',
+                    FontSize INT DEFAULT 12,
+                    Theme VARCHAR(50) DEFAULT 'Light',
+                    WordWrap BOOLEAN DEFAULT FALSE,
+                    ShowLineNumbers BOOLEAN DEFAULT TRUE,
+                    AutoSave BOOLEAN DEFAULT TRUE,
+                    AutoSaveInterval INT DEFAULT 30,
+                    ShowStatusBar BOOLEAN DEFAULT TRUE,
+                    WindowWidth INT DEFAULT 1000,
+                    WindowHeight INT DEFAULT 700,
+                    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+
+            using (var command = new MySqlCommand(createEditorSettingsTable, connection))
+            {
+                command.ExecuteNonQuery();
+            }
+
+            // Створюємо таблицю для останніх файлів (це головне!)
+            string createRecentFilesTable = @"
+                CREATE TABLE IF NOT EXISTS RecentFiles (
+                    Id INT AUTO_INCREMENT PRIMARY KEY,
+                    FilePath VARCHAR(500) NOT NULL,
+                    FileName VARCHAR(255) NOT NULL,
+                    LastOpenedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    OpenCount INT DEFAULT 1,
+                    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY unique_filepath (FilePath),
+                    INDEX idx_last_opened (LastOpenedAt DESC),
+                    INDEX idx_filename (FileName)
+                ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+
+            using (var command = new MySqlCommand(createRecentFilesTable, connection))
+            {
+                command.ExecuteNonQuery();
+            }
+
+            // Створюємо таблицю для документів (якщо потрібно)
+            string createDocumentsTable = @"
+                CREATE TABLE IF NOT EXISTS Documents (
+                    Id INT AUTO_INCREMENT PRIMARY KEY,
+                    FileName VARCHAR(255) NOT NULL,
+                    FilePath VARCHAR(500),
+                    Content LONGTEXT,
+                    EncodingId INT,
+                    IsSaved BOOLEAN DEFAULT FALSE,
+                    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (EncodingId) REFERENCES TextEncodings(Id) ON DELETE SET NULL,
+                    INDEX idx_filepath (FilePath),
+                    INDEX idx_filename (FileName)
+                ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+
+            using (var command = new MySqlCommand(createDocumentsTable, connection))
+            {
+                command.ExecuteNonQuery();
+            }
+
+            System.Diagnostics.Debug.WriteLine("✅ All database tables created successfully");
+        }
 
         private void SeedDataIfEmpty(MySqlConnection connection)
         {
@@ -82,7 +168,7 @@ namespace TextEditorMK.Data
                 }
             }
 
-
+            // Перевірити чи EditorSettings порожня
             string checkSettings = "SELECT COUNT(*) FROM EditorSettings";
             using (var cmd = new MySqlCommand(checkSettings, connection))
             {

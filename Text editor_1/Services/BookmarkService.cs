@@ -3,19 +3,37 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using TextEditorMK.Models;
+using TextEditorMK.Repositories.Interfaces;
 
 namespace TextEditorMK.Services
 {
-
     public class BookmarkService
     {
         private readonly RichTextBox _textBox;
-        private readonly List<Bookmark> _bookmarks;
+        private readonly IBookmarkRepository _bookmarkRepository;
+        private readonly List<Bookmark> _cachedBookmarks;
+        
+        // Інформація про поточний документ
+        public string CurrentDocumentName { get; private set; } = "Untitled";
+        public string CurrentDocumentPath { get; private set; } = string.Empty;
 
-        public BookmarkService(RichTextBox textBox)
+        public BookmarkService(RichTextBox textBox, IBookmarkRepository bookmarkRepository = null)
         {
             _textBox = textBox ?? throw new ArgumentNullException(nameof(textBox));
-            _bookmarks = new List<Bookmark>();
+            _bookmarkRepository = bookmarkRepository;
+            _cachedBookmarks = new List<Bookmark>();
+            
+            LoadBookmarks();
+        }
+
+        /// <summary>
+        /// Встановлює інформацію про поточний документ
+        /// </summary>
+        public void SetCurrentDocument(string documentName, string documentPath = null)
+        {
+            CurrentDocumentName = string.IsNullOrEmpty(documentName) ? "Untitled" : documentName;
+            CurrentDocumentPath = documentPath ?? string.Empty;
+            System.Diagnostics.Debug.WriteLine($"?? BookmarkService: Document set to {CurrentDocumentName}");
         }
 
         public void AddBookmark(int lineNumber, string description = null)
@@ -26,27 +44,75 @@ namespace TextEditorMK.Services
             if (HasBookmark(lineNumber))
                 throw new InvalidOperationException($"Bookmark already exists on line {lineNumber}");
 
+            string linePreview = GetLinePreview(lineNumber);
+
             var bookmark = new Bookmark
             {
                 LineNumber = lineNumber,
                 Description = description ?? $"Bookmark at line {lineNumber}",
+                LinePreview = linePreview,
+                DocumentName = CurrentDocumentName,
+                DocumentPath = CurrentDocumentPath,
                 CreatedDate = DateTime.Now,
                 IsActive = true
             };
 
-            _bookmarks.Add(bookmark);
-            _bookmarks.Sort((b1, b2) => b1.LineNumber.CompareTo(b2.LineNumber));
-
-            System.Diagnostics.Debug.WriteLine($"? Added bookmark at line {lineNumber}");
+            try
+            {
+                if (_bookmarkRepository != null)
+                {
+                    _bookmarkRepository.Add(bookmark);
+                    System.Diagnostics.Debug.WriteLine($"? Added bookmark to DB at line {lineNumber} in {CurrentDocumentName}");
+                }
+                else
+                {
+                    _cachedBookmarks.Add(bookmark);
+                    _cachedBookmarks.Sort((b1, b2) => b1.LineNumber.CompareTo(b2.LineNumber));
+                    System.Diagnostics.Debug.WriteLine($"? Added bookmark to cache at line {lineNumber} in {CurrentDocumentName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error adding bookmark: {ex.Message}");
+                throw;
+            }
         }
 
         public void RemoveBookmark(int lineNumber)
         {
-            var bookmark = _bookmarks.FirstOrDefault(b => b.LineNumber == lineNumber);
-            if (bookmark == null)
-                throw new ArgumentException($"No bookmark found at line {lineNumber}");
+            try
+            {
+                bool found = false;
 
-            _bookmarks.Remove(bookmark);
+                if (_bookmarkRepository != null)
+                {
+                    var bookmark = _bookmarkRepository.GetByLineNumber(lineNumber);
+                    if (bookmark != null)
+                    {
+                        _bookmarkRepository.Delete(bookmark.Id);
+                        found = true;
+                        System.Diagnostics.Debug.WriteLine($"??? Removed bookmark from DB at line {lineNumber}");
+                    }
+                }
+                else
+                {
+                    var bookmark = _cachedBookmarks.FirstOrDefault(b => b.LineNumber == lineNumber);
+                    if (bookmark != null)
+                    {
+                        _cachedBookmarks.Remove(bookmark);
+                        found = true;
+                        System.Diagnostics.Debug.WriteLine($"??? Removed bookmark from cache at line {lineNumber}");
+                    }
+                }
+
+                if (!found)
+                    throw new ArgumentException($"No bookmark found at line {lineNumber}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error removing bookmark: {ex.Message}");
+                throw;
+            }
         }
 
         public void ToggleBookmark(int lineNumber, string description = null)
@@ -63,49 +129,183 @@ namespace TextEditorMK.Services
 
         public int? GoToNextBookmark(int currentLine)
         {
-            var nextBookmark = _bookmarks
-                .Where(b => b.IsActive && b.LineNumber > currentLine)
-                .OrderBy(b => b.LineNumber)
-                .FirstOrDefault();
-
-            if (nextBookmark != null)
+            try
             {
-                GoToLine(nextBookmark.LineNumber);
-                return nextBookmark.LineNumber;
-            }
+                var allBookmarks = GetAllActiveBookmarks();
+                var nextBookmark = allBookmarks
+                    .Where(b => b.LineNumber > currentLine)
+                    .OrderBy(b => b.LineNumber)
+                    .FirstOrDefault();
 
-            return null;
+                if (nextBookmark != null)
+                {
+                    GoToLine(nextBookmark.LineNumber);
+                    
+                    // Update access statistics
+                    nextBookmark.UpdateAccess();
+                    UpdateBookmarkInRepository(nextBookmark);
+                    
+                    return nextBookmark.LineNumber;
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error going to next bookmark: {ex.Message}");
+                return null;
+            }
         }
 
         public int? GoToPreviousBookmark(int currentLine)
         {
-            var prevBookmark = _bookmarks
-                .Where(b => b.IsActive && b.LineNumber < currentLine)
-                .OrderByDescending(b => b.LineNumber)
-                .FirstOrDefault();
-
-            if (prevBookmark != null)
+            try
             {
-                GoToLine(prevBookmark.LineNumber);
-                return prevBookmark.LineNumber;
-            }
+                var allBookmarks = GetAllActiveBookmarks();
+                var prevBookmark = allBookmarks
+                    .Where(b => b.LineNumber < currentLine)
+                    .OrderByDescending(b => b.LineNumber)
+                    .FirstOrDefault();
 
-            return null;
+                if (prevBookmark != null)
+                {
+                    GoToLine(prevBookmark.LineNumber);
+                    
+                    // Update access statistics
+                    prevBookmark.UpdateAccess();
+                    UpdateBookmarkInRepository(prevBookmark);
+                    
+                    return prevBookmark.LineNumber;
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error going to previous bookmark: {ex.Message}");
+                return null;
+            }
         }
 
         public List<Bookmark> GetAllBookmarks()
         {
-            return _bookmarks.Where(b => b.IsActive).OrderBy(b => b.LineNumber).ToList();
+            return GetAllActiveBookmarks().OrderBy(b => b.LineNumber).ToList();
         }
 
         public void ClearAllBookmarks()
         {
-            _bookmarks.Clear();
+            try
+            {
+                if (_bookmarkRepository != null)
+                {
+                    _bookmarkRepository.ClearAll();
+                    System.Diagnostics.Debug.WriteLine("??? Cleared all bookmarks from DB");
+                }
+                else
+                {
+                    _cachedBookmarks.Clear();
+                    System.Diagnostics.Debug.WriteLine("??? Cleared all bookmarks from cache");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error clearing bookmarks: {ex.Message}");
+                throw;
+            }
         }
 
         public bool HasBookmark(int lineNumber)
         {
-            return _bookmarks.Any(b => b.IsActive && b.LineNumber == lineNumber);
+            try
+            {
+                if (_bookmarkRepository != null)
+                {
+                    var bookmark = _bookmarkRepository.GetByLineNumber(lineNumber);
+                    return bookmark != null && bookmark.IsActive;
+                }
+                else
+                {
+                    return _cachedBookmarks.Any(b => b.IsActive && b.LineNumber == lineNumber);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error checking bookmark: {ex.Message}");
+                return false;
+            }
+        }
+
+        private List<Bookmark> GetAllActiveBookmarks()
+        {
+            try
+            {
+                if (_bookmarkRepository != null)
+                {
+                    return _bookmarkRepository.GetActiveBookmarks();
+                }
+                else
+                {
+                    return _cachedBookmarks.Where(b => b.IsActive).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error getting active bookmarks: {ex.Message}");
+                return new List<Bookmark>();
+            }
+        }
+
+        private void UpdateBookmarkInRepository(Bookmark bookmark)
+        {
+            try
+            {
+                if (_bookmarkRepository != null && bookmark.Id > 0)
+                {
+                    _bookmarkRepository.Update(bookmark);
+                    System.Diagnostics.Debug.WriteLine($"?? Updated bookmark access in DB: Line {bookmark.LineNumber}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error updating bookmark: {ex.Message}");
+            }
+        }
+
+        private void LoadBookmarks()
+        {
+            try
+            {
+                if (_bookmarkRepository != null)
+                {
+                    var dbBookmarks = _bookmarkRepository.GetAll();
+                    System.Diagnostics.Debug.WriteLine($"?? Loaded {dbBookmarks.Count} bookmarks from database");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("?? Using cached bookmarks (no database connection)");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error loading bookmarks: {ex.Message}");
+            }
+        }
+
+        private string GetLinePreview(int lineNumber)
+        {
+            try
+            {
+                if (_textBox != null && lineNumber > 0 && lineNumber <= _textBox.Lines.Length)
+                {
+                    string line = _textBox.Lines[lineNumber - 1];
+                    return line.Length > 100 ? line.Substring(0, 100) + "..." : line;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"? Error getting line preview: {ex.Message}");
+            }
+            return string.Empty;
         }
 
         private void GoToLine(int lineNumber)
@@ -126,7 +326,7 @@ namespace TextEditorMK.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error navigating to line {lineNumber}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"? Error navigating to line {lineNumber}: {ex.Message}");
             }
         }
     }

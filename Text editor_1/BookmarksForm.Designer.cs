@@ -19,6 +19,7 @@ namespace Text_editor_1
         {
             this.bookmarksListView = new System.Windows.Forms.ListView();
             this.lineColumnHeader = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.documentColumnHeader = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.descriptionColumnHeader = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.timeColumnHeader = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.goToButton = new System.Windows.Forms.Button();
@@ -33,6 +34,7 @@ namespace Text_editor_1
             // 
             this.bookmarksListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.lineColumnHeader,
+            this.documentColumnHeader,
             this.descriptionColumnHeader,
             this.timeColumnHeader});
             this.bookmarksListView.FullRowSelect = true;
@@ -41,7 +43,7 @@ namespace Text_editor_1
             this.bookmarksListView.Location = new System.Drawing.Point(12, 12);
             this.bookmarksListView.MultiSelect = false;
             this.bookmarksListView.Name = "bookmarksListView";
-            this.bookmarksListView.Size = new System.Drawing.Size(460, 280);
+            this.bookmarksListView.Size = new System.Drawing.Size(580, 280);
             this.bookmarksListView.TabIndex = 0;
             this.bookmarksListView.UseCompatibleStateImageBehavior = false;
             this.bookmarksListView.View = System.Windows.Forms.View.Details;
@@ -53,19 +55,24 @@ namespace Text_editor_1
             this.lineColumnHeader.Text = "Line";
             this.lineColumnHeader.Width = 60;
             // 
+            // documentColumnHeader
+            // 
+            this.documentColumnHeader.Text = "Document";
+            this.documentColumnHeader.Width = 150;
+            // 
             // descriptionColumnHeader
             // 
             this.descriptionColumnHeader.Text = "Description";
-            this.descriptionColumnHeader.Width = 280;
+            this.descriptionColumnHeader.Width = 220;
             // 
             // timeColumnHeader
             // 
             this.timeColumnHeader.Text = "Created";
-            this.timeColumnHeader.Width = 100;
+            this.timeColumnHeader.Width = 120;
             // 
             // goToButton
             // 
-            this.goToButton.Location = new System.Drawing.Point(490, 12);
+            this.goToButton.Location = new System.Drawing.Point(610, 12);
             this.goToButton.Name = "goToButton";
             this.goToButton.Size = new System.Drawing.Size(100, 30);
             this.goToButton.TabIndex = 1;
@@ -75,7 +82,7 @@ namespace Text_editor_1
             // 
             // deleteButton
             // 
-            this.deleteButton.Location = new System.Drawing.Point(490, 50);
+            this.deleteButton.Location = new System.Drawing.Point(610, 50);
             this.deleteButton.Name = "deleteButton";
             this.deleteButton.Size = new System.Drawing.Size(100, 30);
             this.deleteButton.TabIndex = 2;
@@ -85,7 +92,7 @@ namespace Text_editor_1
             // 
             // clearAllButton
             // 
-            this.clearAllButton.Location = new System.Drawing.Point(490, 88);
+            this.clearAllButton.Location = new System.Drawing.Point(610, 88);
             this.clearAllButton.Name = "clearAllButton";
             this.clearAllButton.Size = new System.Drawing.Size(100, 30);
             this.clearAllButton.TabIndex = 3;
@@ -96,7 +103,7 @@ namespace Text_editor_1
             // closeButton
             // 
             this.closeButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.closeButton.Location = new System.Drawing.Point(490, 262);
+            this.closeButton.Location = new System.Drawing.Point(610, 262);
             this.closeButton.Name = "closeButton";
             this.closeButton.Size = new System.Drawing.Size(100, 30);
             this.closeButton.TabIndex = 5;
@@ -106,7 +113,7 @@ namespace Text_editor_1
             // 
             // refreshButton
             // 
-            this.refreshButton.Location = new System.Drawing.Point(490, 126);
+            this.refreshButton.Location = new System.Drawing.Point(610, 126);
             this.refreshButton.Name = "refreshButton";
             this.refreshButton.Size = new System.Drawing.Size(100, 30);
             this.refreshButton.TabIndex = 4;
@@ -130,7 +137,7 @@ namespace Text_editor_1
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.closeButton;
-            this.ClientSize = new System.Drawing.Size(604, 330);
+            this.ClientSize = new System.Drawing.Size(724, 330);
             this.Controls.Add(this.statusLabel);
             this.Controls.Add(this.refreshButton);
             this.Controls.Add(this.closeButton);
@@ -155,6 +162,7 @@ namespace Text_editor_1
 
         private System.Windows.Forms.ListView bookmarksListView;
         private System.Windows.Forms.ColumnHeader lineColumnHeader;
+        private System.Windows.Forms.ColumnHeader documentColumnHeader;
         private System.Windows.Forms.ColumnHeader descriptionColumnHeader;
         private System.Windows.Forms.ColumnHeader timeColumnHeader;
         private System.Windows.Forms.Button goToButton;

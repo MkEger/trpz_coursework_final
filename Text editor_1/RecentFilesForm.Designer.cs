@@ -29,6 +29,7 @@ namespace Text_editor_1
             this.btnClearHistory = new System.Windows.Forms.Button();
             this.lblTitle = new System.Windows.Forms.Label();
             this.SuspendLayout();
+            
             // 
             // listViewRecentFiles
             // 
@@ -42,6 +43,14 @@ namespace Text_editor_1
             this.listViewRecentFiles.TabIndex = 1;
             this.listViewRecentFiles.UseCompatibleStateImageBehavior = false;
             this.listViewRecentFiles.View = System.Windows.Forms.View.Details;
+            this.listViewRecentFiles.MultiSelect = false;
+            
+            // Додаємо колонки прямо тут
+            this.listViewRecentFiles.Columns.Add("File Name", 200, HorizontalAlignment.Left);
+            this.listViewRecentFiles.Columns.Add("Full Path", 300, HorizontalAlignment.Left);
+            this.listViewRecentFiles.Columns.Add("Last Opened", 150, HorizontalAlignment.Left);
+            this.listViewRecentFiles.Columns.Add("Open Count", 100, HorizontalAlignment.Center);
+            
             // 
             // btnOpen
             // 
@@ -56,6 +65,7 @@ namespace Text_editor_1
             // 
             // btnCancel
             // 
+            this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.Location = new System.Drawing.Point(524, 443);
             this.btnCancel.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.btnCancel.Name = "btnCancel";
@@ -89,6 +99,8 @@ namespace Text_editor_1
             // 
             // RecentFilesForm
             // 
+            this.AcceptButton = this.btnOpen;
+            this.CancelButton = this.btnCancel;
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(779, 506);
@@ -107,7 +119,6 @@ namespace Text_editor_1
             this.Load += new System.EventHandler(this.RecentFilesForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
     }
 }

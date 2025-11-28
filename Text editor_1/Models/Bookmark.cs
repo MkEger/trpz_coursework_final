@@ -9,6 +9,8 @@ namespace TextEditorMK.Models
         public int LineNumber { get; set; }
         public string Description { get; set; }
         public string LinePreview { get; set; }
+        public string DocumentName { get; set; } // Назва документа
+        public string DocumentPath { get; set; } // Повний шлях документа (опціонально)
         public DateTime CreatedDate { get; set; }
         public DateTime? LastAccessedDate { get; set; }
         public int AccessCount { get; set; }

@@ -31,10 +31,10 @@ namespace TextEditorMK.Repositories.Implementations
 
                     using (var command = new MySqlCommand(query, connection))
                     {
-                        command.Parameters.AddWithValue("@FileName", document.FileName);
-                        command.Parameters.AddWithValue("@FilePath", document.FilePath);
+                        command.Parameters.AddWithValue("@FileName", document.FileName ?? string.Empty);
+                        command.Parameters.AddWithValue("@FilePath", document.FilePath ?? string.Empty);
                         command.Parameters.AddWithValue("@Content", document.Content ?? string.Empty);
-                        command.Parameters.AddWithValue("@EncodingId", document.EncodingId);
+                        command.Parameters.AddWithValue("@EncodingId", document.EncodingId != 0 ? document.EncodingId : 1);
                         command.Parameters.AddWithValue("@CreatedAt", document.CreatedAt);
                         command.Parameters.AddWithValue("@ModifiedAt", document.ModifiedAt);
                         command.Parameters.AddWithValue("@IsSaved", document.IsSaved);
@@ -67,10 +67,10 @@ namespace TextEditorMK.Repositories.Implementations
                     using (var command = new MySqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@Id", document.Id);
-                        command.Parameters.AddWithValue("@FileName", document.FileName);
-                        command.Parameters.AddWithValue("@FilePath", document.FilePath);
+                        command.Parameters.AddWithValue("@FileName", document.FileName ?? string.Empty);
+                        command.Parameters.AddWithValue("@FilePath", document.FilePath ?? string.Empty);
                         command.Parameters.AddWithValue("@Content", document.Content ?? string.Empty);
-                        command.Parameters.AddWithValue("@EncodingId", document.EncodingId);
+                        command.Parameters.AddWithValue("@EncodingId", document.EncodingId != 0 ? document.EncodingId : 1);
                         command.Parameters.AddWithValue("@ModifiedAt", document.ModifiedAt);
                         command.Parameters.AddWithValue("@IsSaved", document.IsSaved);
 
@@ -105,8 +105,8 @@ namespace TextEditorMK.Repositories.Implementations
                                 {
                                     Id = reader.GetInt32("Id"),
                                     FileName = reader.GetString("FileName"),
-                                    FilePath = reader.GetString("FilePath"),
-                                    Content = reader["Content"] as string ?? string.Empty, // <-- ВИПРАВЛЕНО
+                                    FilePath = reader["FilePath"] as string ?? string.Empty,
+                                    Content = reader["Content"] as string ?? string.Empty,
                                     EncodingId = reader.GetInt32("EncodingId"),
                                     CreatedAt = reader.GetDateTime("CreatedAt"),
                                     ModifiedAt = reader.GetDateTime("ModifiedAt"),
@@ -143,8 +143,8 @@ namespace TextEditorMK.Repositories.Implementations
                             {
                                 Id = reader.GetInt32("Id"),
                                 FileName = reader.GetString("FileName"),
-                                FilePath = reader.GetString("FilePath"),
-                                Content = reader["Content"] as string ?? string.Empty, // <-- ВИПРАВЛЕНО
+                                FilePath = reader["FilePath"] as string ?? string.Empty,
+                                Content = reader["Content"] as string ?? string.Empty,
                                 EncodingId = reader.GetInt32("EncodingId"),
                                 CreatedAt = reader.GetDateTime("CreatedAt"),
                                 ModifiedAt = reader.GetDateTime("ModifiedAt"),
@@ -203,8 +203,8 @@ namespace TextEditorMK.Repositories.Implementations
                                 {
                                     Id = reader.GetInt32("Id"),
                                     FileName = reader.GetString("FileName"),
-                                    FilePath = reader.GetString("FilePath"),
-                                    Content = reader["Content"] as string ?? string.Empty, // <-- ВИПРАВЛЕНО
+                                    FilePath = reader["FilePath"] as string ?? string.Empty,
+                                    Content = reader["Content"] as string ?? string.Empty,
                                     EncodingId = reader.GetInt32("EncodingId"),
                                     CreatedAt = reader.GetDateTime("CreatedAt"),
                                     ModifiedAt = reader.GetDateTime("ModifiedAt"),

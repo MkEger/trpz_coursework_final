@@ -81,7 +81,6 @@ namespace Text_editor_1
             // usageColumnHeader
             // 
             this.usageColumnHeader.Text = "Usage";
-            this.usageColumnHeader.Width = 60;
             // 
             // insertButton
             // 
@@ -137,7 +136,7 @@ namespace Text_editor_1
             // languageComboBox
             // 
             this.languageComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.languageComboBox.Location = new System.Drawing.Point(80, 15);
+            this.languageComboBox.Location = new System.Drawing.Point(96, 15);
             this.languageComboBox.Name = "languageComboBox";
             this.languageComboBox.Size = new System.Drawing.Size(150, 24);
             this.languageComboBox.TabIndex = 6;
@@ -148,7 +147,7 @@ namespace Text_editor_1
             this.languageLabel.AutoSize = true;
             this.languageLabel.Location = new System.Drawing.Point(12, 18);
             this.languageLabel.Name = "languageLabel";
-            this.languageLabel.Size = new System.Drawing.Size(77, 17);
+            this.languageLabel.Size = new System.Drawing.Size(71, 16);
             this.languageLabel.TabIndex = 7;
             this.languageLabel.Text = "Language:";
             // 
@@ -188,7 +187,7 @@ namespace Text_editor_1
             this.statusLabel.ForeColor = System.Drawing.SystemColors.GrayText;
             this.statusLabel.Location = new System.Drawing.Point(12, 425);
             this.statusLabel.Name = "statusLabel";
-            this.statusLabel.Size = new System.Drawing.Size(81, 17);
+            this.statusLabel.Size = new System.Drawing.Size(76, 16);
             this.statusLabel.TabIndex = 9;
             this.statusLabel.Text = "0 snippet(s)";
             // 
@@ -210,18 +209,20 @@ namespace Text_editor_1
             this.Controls.Add(this.insertButton);
             this.Controls.Add(this.snippetsListView);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Location = new System.Drawing.Point(300, 100);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "SnippetsForm";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Snippets";
             this.Load += new System.EventHandler(this.SnippetsForm_Load);
             this.previewGroupBox.ResumeLayout(false);
             this.previewGroupBox.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
+
         }
 
         #endregion

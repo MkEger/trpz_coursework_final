@@ -7,7 +7,6 @@ using TextEditorMK.Repositories.Interfaces;
 
 namespace TextEditorMK.Services
 {
-
     public class SnippetService
     {
         private readonly RichTextBox _textBox;
@@ -36,7 +35,6 @@ namespace TextEditorMK.Services
                 }
                 else
                 {
-                    // Fallback to cached snippets
                     if (string.IsNullOrEmpty(language))
                         return new List<CodeSnippet>(_cachedSnippets);
 
@@ -45,9 +43,8 @@ namespace TextEditorMK.Services
                                          .ToList();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error getting snippets: {ex.Message}");
                 return new List<CodeSnippet>();
             }
         }
@@ -60,7 +57,6 @@ namespace TextEditorMK.Services
             try
             {
                 string expandedCode = ExpandSnippet(snippet);
-                
 
                 var currentFont = _textBox.Font;
                 var currentColor = _textBox.ForeColor;
@@ -73,22 +69,16 @@ namespace TextEditorMK.Services
                 _textBox.SelectionBackColor = _textBox.BackColor;
                 
                 _textBox.SelectedText = expandedCode;
-                
 
                 _textBox.SelectionStart = cursorPosition + expandedCode.Length;
                 _textBox.SelectionLength = 0;
 
-                // Update usage statistics
                 snippet.UpdateUsage();
                 
-                // Save to database if repository available
                 if (_snippetRepository != null && snippet.Id > 0)
                 {
                     _snippetRepository.Update(snippet);
-                    System.Diagnostics.Debug.WriteLine($"?? Updated snippet usage in DB: {snippet.Name}");
                 }
-
-                System.Diagnostics.Debug.WriteLine($"? Inserted snippet: {snippet.Name}");
             }
             catch (Exception ex)
             {
@@ -107,36 +97,28 @@ namespace TextEditorMK.Services
 
                 if (_snippetRepository != null)
                 {
-                    // Check if snippet already exists
                     var existing = _snippetRepository.GetByTrigger(snippet.Trigger, snippet.Language);
                     if (existing != null)
                     {
-                        // Update existing snippet
                         existing.Name = snippet.Name;
                         existing.Description = snippet.Description;
                         existing.Code = snippet.Code;
                         existing.Category = snippet.Category;
                         _snippetRepository.Update(existing);
-                        System.Diagnostics.Debug.WriteLine($"?? Updated existing snippet: {snippet.Name}");
                     }
                     else
                     {
-                        // Add new snippet
                         _snippetRepository.Add(snippet);
-                        System.Diagnostics.Debug.WriteLine($"? Added new snippet to DB: {snippet.Name}");
                     }
                 }
                 else
                 {
-                    // Fallback to cache
                     _cachedSnippets.RemoveAll(s => s.Name == snippet.Name && s.Language == snippet.Language);
                     _cachedSnippets.Add(snippet);
-                    System.Diagnostics.Debug.WriteLine($"? Added snippet to cache: {snippet.Name}");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error adding snippet: {ex.Message}");
                 throw;
             }
         }
@@ -157,26 +139,18 @@ namespace TextEditorMK.Services
                         _snippetRepository.Delete(snippet.Id);
                         found = true;
                     }
-                    
-                    if (found)
-                        System.Diagnostics.Debug.WriteLine($"??? Deleted snippet from DB: {snippetName}");
                 }
                 else
                 {
-                    // Fallback to cache
                     int removed = _cachedSnippets.RemoveAll(s => s.Name == snippetName);
                     found = removed > 0;
-                    
-                    if (found)
-                        System.Diagnostics.Debug.WriteLine($"??? Deleted snippet from cache: {snippetName}");
                 }
 
                 if (!found)
                     throw new ArgumentException($"Snippet '{snippetName}' not found");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error deleting snippet: {ex.Message}");
                 throw;
             }
         }
@@ -194,15 +168,13 @@ namespace TextEditorMK.Services
                 }
                 else
                 {
-                    // Fallback to cache
                     return _cachedSnippets.FirstOrDefault(s => 
                         s.Trigger.Equals(trigger, StringComparison.OrdinalIgnoreCase) && 
                         (string.IsNullOrEmpty(language) || s.Language.Equals(language, StringComparison.OrdinalIgnoreCase)));
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error finding snippet by trigger: {ex.Message}");
                 return null;
             }
         }
@@ -217,7 +189,6 @@ namespace TextEditorMK.Services
                 }
                 else
                 {
-                    // Fallback to cache
                     return _cachedSnippets
                         .OrderByDescending(s => s.UsageCount)
                         .ThenByDescending(s => s.LastUsedDate)
@@ -225,9 +196,8 @@ namespace TextEditorMK.Services
                         .ToList();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error getting most used snippets: {ex.Message}");
                 return new List<CodeSnippet>();
             }
         }
@@ -239,7 +209,6 @@ namespace TextEditorMK.Services
 
             string code = snippet.Code;
             
-            // Basic variable expansion
             code = code.Replace("$DATE", DateTime.Now.ToString("yyyy-MM-dd"));
             code = code.Replace("$TIME", DateTime.Now.ToString("HH:mm:ss"));
             code = code.Replace("$USER", Environment.UserName);
@@ -253,11 +222,8 @@ namespace TextEditorMK.Services
             {
                 if (_snippetRepository != null)
                 {
-                    // Load snippets from database
                     var dbSnippets = _snippetRepository.GetAll();
-                    System.Diagnostics.Debug.WriteLine($"?? Loaded {dbSnippets.Count} snippets from database");
 
-                    // If no snippets in DB, add defaults
                     if (dbSnippets.Count == 0)
                     {
                         AddDefaultSnippets();
@@ -265,15 +231,11 @@ namespace TextEditorMK.Services
                 }
                 else
                 {
-                    // Fallback to cache with defaults
                     AddDefaultSnippetsToCache();
-                    System.Diagnostics.Debug.WriteLine($"?? Initialized {_cachedSnippets.Count} default snippets in cache");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error initializing snippets: {ex.Message}");
-                // Fallback to cache
                 AddDefaultSnippetsToCache();
             }
         }
@@ -288,13 +250,11 @@ namespace TextEditorMK.Services
                 {
                     _snippetRepository.Add(snippet);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    System.Diagnostics.Debug.WriteLine($"? Error adding default snippet {snippet.Name}: {ex.Message}");
+                    // Continue with other snippets if one fails
                 }
             }
-            
-            System.Diagnostics.Debug.WriteLine($"? Added {defaultSnippets.Count} default snippets to database");
         }
 
         private void AddDefaultSnippetsToCache()

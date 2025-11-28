@@ -13,7 +13,6 @@ namespace TextEditorMK.Services
         private readonly IBookmarkRepository _bookmarkRepository;
         private readonly List<Bookmark> _cachedBookmarks;
         
-        // Інформація про поточний документ
         public string CurrentDocumentName { get; private set; } = "Untitled";
         public string CurrentDocumentPath { get; private set; } = string.Empty;
 
@@ -26,14 +25,10 @@ namespace TextEditorMK.Services
             LoadBookmarks();
         }
 
-        /// <summary>
-        /// Встановлює інформацію про поточний документ
-        /// </summary>
         public void SetCurrentDocument(string documentName, string documentPath = null)
         {
             CurrentDocumentName = string.IsNullOrEmpty(documentName) ? "Untitled" : documentName;
             CurrentDocumentPath = documentPath ?? string.Empty;
-            System.Diagnostics.Debug.WriteLine($"?? BookmarkService: Document set to {CurrentDocumentName}");
         }
 
         public void AddBookmark(int lineNumber, string description = null)
@@ -62,18 +57,15 @@ namespace TextEditorMK.Services
                 if (_bookmarkRepository != null)
                 {
                     _bookmarkRepository.Add(bookmark);
-                    System.Diagnostics.Debug.WriteLine($"? Added bookmark to DB at line {lineNumber} in {CurrentDocumentName}");
                 }
                 else
                 {
                     _cachedBookmarks.Add(bookmark);
                     _cachedBookmarks.Sort((b1, b2) => b1.LineNumber.CompareTo(b2.LineNumber));
-                    System.Diagnostics.Debug.WriteLine($"? Added bookmark to cache at line {lineNumber} in {CurrentDocumentName}");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error adding bookmark: {ex.Message}");
                 throw;
             }
         }
@@ -91,7 +83,6 @@ namespace TextEditorMK.Services
                     {
                         _bookmarkRepository.Delete(bookmark.Id);
                         found = true;
-                        System.Diagnostics.Debug.WriteLine($"??? Removed bookmark from DB at line {lineNumber}");
                     }
                 }
                 else
@@ -101,16 +92,14 @@ namespace TextEditorMK.Services
                     {
                         _cachedBookmarks.Remove(bookmark);
                         found = true;
-                        System.Diagnostics.Debug.WriteLine($"??? Removed bookmark from cache at line {lineNumber}");
                     }
                 }
 
                 if (!found)
                     throw new ArgumentException($"No bookmark found at line {lineNumber}");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error removing bookmark: {ex.Message}");
                 throw;
             }
         }
@@ -141,7 +130,6 @@ namespace TextEditorMK.Services
                 {
                     GoToLine(nextBookmark.LineNumber);
                     
-                    // Update access statistics
                     nextBookmark.UpdateAccess();
                     UpdateBookmarkInRepository(nextBookmark);
                     
@@ -150,9 +138,8 @@ namespace TextEditorMK.Services
 
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error going to next bookmark: {ex.Message}");
                 return null;
             }
         }
@@ -171,7 +158,6 @@ namespace TextEditorMK.Services
                 {
                     GoToLine(prevBookmark.LineNumber);
                     
-                    // Update access statistics
                     prevBookmark.UpdateAccess();
                     UpdateBookmarkInRepository(prevBookmark);
                     
@@ -180,9 +166,8 @@ namespace TextEditorMK.Services
 
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error going to previous bookmark: {ex.Message}");
                 return null;
             }
         }
@@ -199,17 +184,14 @@ namespace TextEditorMK.Services
                 if (_bookmarkRepository != null)
                 {
                     _bookmarkRepository.ClearAll();
-                    System.Diagnostics.Debug.WriteLine("??? Cleared all bookmarks from DB");
                 }
                 else
                 {
                     _cachedBookmarks.Clear();
-                    System.Diagnostics.Debug.WriteLine("??? Cleared all bookmarks from cache");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error clearing bookmarks: {ex.Message}");
                 throw;
             }
         }
@@ -228,9 +210,8 @@ namespace TextEditorMK.Services
                     return _cachedBookmarks.Any(b => b.IsActive && b.LineNumber == lineNumber);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error checking bookmark: {ex.Message}");
                 return false;
             }
         }
@@ -248,9 +229,8 @@ namespace TextEditorMK.Services
                     return _cachedBookmarks.Where(b => b.IsActive).ToList();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error getting active bookmarks: {ex.Message}");
                 return new List<Bookmark>();
             }
         }
@@ -262,12 +242,11 @@ namespace TextEditorMK.Services
                 if (_bookmarkRepository != null && bookmark.Id > 0)
                 {
                     _bookmarkRepository.Update(bookmark);
-                    System.Diagnostics.Debug.WriteLine($"?? Updated bookmark access in DB: Line {bookmark.LineNumber}");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error updating bookmark: {ex.Message}");
+                // Silent fail
             }
         }
 
@@ -278,16 +257,11 @@ namespace TextEditorMK.Services
                 if (_bookmarkRepository != null)
                 {
                     var dbBookmarks = _bookmarkRepository.GetAll();
-                    System.Diagnostics.Debug.WriteLine($"?? Loaded {dbBookmarks.Count} bookmarks from database");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("?? Using cached bookmarks (no database connection)");
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error loading bookmarks: {ex.Message}");
+                // Silent fail
             }
         }
 
@@ -301,9 +275,9 @@ namespace TextEditorMK.Services
                     return line.Length > 100 ? line.Substring(0, 100) + "..." : line;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error getting line preview: {ex.Message}");
+                // Silent fail
             }
             return string.Empty;
         }
@@ -324,9 +298,9 @@ namespace TextEditorMK.Services
                     _textBox.Focus();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error navigating to line {lineNumber}: {ex.Message}");
+                // Silent fail
             }
         }
     }

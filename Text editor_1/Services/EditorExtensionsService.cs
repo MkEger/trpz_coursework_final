@@ -14,7 +14,6 @@ namespace TextEditorMK.Services
         private readonly ISnippetRepository _snippetRepository;
         private readonly IBookmarkRepository _bookmarkRepository;
         
-        // Інформація про поточний документ
         public string CurrentDocumentName { get; private set; } = "Untitled";
         public string CurrentDocumentPath { get; private set; } = string.Empty;
 
@@ -22,11 +21,9 @@ namespace TextEditorMK.Services
         public SnippetService Snippets { get; private set; }
         public BookmarkService Bookmarks { get; private set; }
         
-        // Поточна мова програмування
         public string CurrentLanguage { get; private set; } = "text";
         public bool IsExtensionsEnabled { get; set; } = true;
 
-        // Події для інтеграції з MainForm
         public event EventHandler<ExtensionEventArgs> MacroStarted;
         public event EventHandler<ExtensionEventArgs> MacroStopped;
         public event EventHandler<ExtensionEventArgs> SnippetInserted;
@@ -45,22 +42,14 @@ namespace TextEditorMK.Services
             try
             {
                 Macros = new MacroService(_textBox);
-                
-                // Ініціалізуємо Snippets з репозиторієм або без
                 Snippets = new SnippetService(_textBox, _snippetRepository);
-                
-                // Ініціалізуємо Bookmarks з репозиторієм або без
                 Bookmarks = new BookmarkService(_textBox, _bookmarkRepository);
-
-                System.Diagnostics.Debug.WriteLine($"? Editor extensions initialized with DB support: {_snippetRepository != null && _bookmarkRepository != null}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"? Failed to initialize editor extensions: {ex.Message}");
                 throw new Exception("Failed to initialize editor extensions", ex);
             }
         }
-
 
         public void DetectLanguageFromFile(string filePath)
         {
@@ -108,11 +97,9 @@ namespace TextEditorMK.Services
                 }
 
                 SetLanguage(language);
-                System.Diagnostics.Debug.WriteLine($"?? Language detected: {language} from {extension}");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error detecting language: {ex.Message}");
                 SetLanguage("text");
             }
         }
@@ -120,19 +107,13 @@ namespace TextEditorMK.Services
         public void SetLanguage(string language)
         {
             CurrentLanguage = language?.ToLower() ?? "text";
-            System.Diagnostics.Debug.WriteLine($"?? Language set to: {CurrentLanguage}");
         }
 
-        /// <summary>
-        /// Оновлює інформацію про поточний документ
-        /// </summary>
         public void SetCurrentDocument(string documentName, string documentPath = null)
         {
             CurrentDocumentName = string.IsNullOrEmpty(documentName) ? "Untitled" : documentName;
             CurrentDocumentPath = documentPath ?? string.Empty;
-            System.Diagnostics.Debug.WriteLine($"?? Document set to: {CurrentDocumentName}");
         }
-
 
         public void TriggerSmartSnippet(string trigger)
         {
@@ -150,12 +131,11 @@ namespace TextEditorMK.Services
                     OnSnippetInserted(snippet.Name, trigger);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error inserting snippet: {ex.Message}");
+                // Silent fail
             }
         }
-
 
         public void StartMacroRecording(string macroName)
         {
@@ -167,12 +147,11 @@ namespace TextEditorMK.Services
                 Macros.StartRecording(macroName);
                 OnMacroStarted(macroName);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error starting macro recording: {ex.Message}");
+                // Silent fail
             }
         }
-
 
         public void StopMacroRecording()
         {
@@ -185,12 +164,11 @@ namespace TextEditorMK.Services
                 Macros.StopRecording();
                 OnMacroStopped(macroName);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error stopping macro recording: {ex.Message}");
+                // Silent fail
             }
         }
-
 
         public void ToggleBookmarkAtCursor()
         {
@@ -201,7 +179,6 @@ namespace TextEditorMK.Services
             {
                 int currentLine = GetCurrentLineNumber();
                 
-                // Передаємо інформацію про документ в BookmarkService
                 if (Bookmarks is BookmarkService bookmarkService)
                 {
                     bookmarkService.SetCurrentDocument(CurrentDocumentName, CurrentDocumentPath);
@@ -210,9 +187,9 @@ namespace TextEditorMK.Services
                 Bookmarks.ToggleBookmark(currentLine);
                 OnBookmarkToggled(currentLine);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error toggling bookmark: {ex.Message}");
+                // Silent fail
             }
         }
 
@@ -227,13 +204,11 @@ namespace TextEditorMK.Services
                 int? nextLine = Bookmarks.GoToNextBookmark(currentLine);
                 return nextLine.HasValue;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error navigating to next bookmark: {ex.Message}");
                 return false;
             }
         }
-
 
         public bool GoToPreviousBookmark()
         {
@@ -246,13 +221,11 @@ namespace TextEditorMK.Services
                 int? prevLine = Bookmarks.GoToPreviousBookmark(currentLine);
                 return prevLine.HasValue;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error navigating to previous bookmark: {ex.Message}");
                 return false;
             }
         }
-
 
         public EditorExtensionsStatistics GetStatistics()
         {
@@ -279,7 +252,6 @@ namespace TextEditorMK.Services
                 return 1;
             }
         }
-
 
         protected virtual void OnMacroStarted(string macroName)
         {

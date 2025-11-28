@@ -16,12 +16,9 @@ namespace TextEditorMK.Repositories.Implementations
 
         public MySqlSnippetRepository()
         {
-            System.Diagnostics.Debug.WriteLine("??? MySqlSnippetRepository constructor called");
             _dbHelper = new MySqlDatabaseHelper();
             _cleaner = new DatabaseCleaner();
-            System.Diagnostics.Debug.WriteLine("??? About to call CreateTableIfNotExists");
             CreateTableIfNotExists();
-            System.Diagnostics.Debug.WriteLine("??? MySqlSnippetRepository initialization complete");
         }
 
         private void CreateTableIfNotExists()
@@ -31,9 +28,7 @@ namespace TextEditorMK.Repositories.Implementations
                 using (var connection = _dbHelper.GetConnection())
                 {
                     connection.Open();
-                    System.Diagnostics.Debug.WriteLine("?? Checking if Snippets table exists...");
                     
-                    // Перевіряємо, чи існує таблиця з правильною структурою
                     string checkTableQuery = @"
                         SELECT COUNT(*) 
                         FROM INFORMATION_SCHEMA.TABLES 
@@ -49,7 +44,6 @@ namespace TextEditorMK.Repositories.Implementations
 
                     if (tableExists)
                     {
-                        // Перевіряємо, чи є правильна структура (поле TriggerWord)
                         try
                         {
                             string checkStructureQuery = @"
@@ -66,25 +60,18 @@ namespace TextEditorMK.Repositories.Implementations
                                 
                                 if (hasCorrectStructure)
                                 {
-                                    System.Diagnostics.Debug.WriteLine("? Snippets table already exists with correct structure");
-                                    return; // Таблиця існує і має правильну структуру
+                                    return; 
                                 }
                                 else
                                 {
-                                    // Таблиця існує, але має стару структуру - потрібно оновити
-                                    System.Diagnostics.Debug.WriteLine("?? Snippets table has old structure, updating...");
-                                    
-                                    // Переіменовуємо стару таблицю для backup
                                     string backupQuery = "RENAME TABLE Snippets TO Snippets_backup";
                                     using (var backupCommand = new MySqlCommand(backupQuery, connection))
                                     {
                                         backupCommand.ExecuteNonQuery();
                                     }
                                     
-                                    // Створюємо нову таблицю
                                     CreateSnippetsTable(connection);
                                     
-                                    // Мігруємо дані зі старої таблиці (якщо потрібно)
                                     try
                                     {
                                         string migrateQuery = @"
@@ -95,43 +82,35 @@ namespace TextEditorMK.Repositories.Implementations
                                         using (var migrateCommand = new MySqlCommand(migrateQuery, connection))
                                         {
                                             int migratedRows = migrateCommand.ExecuteNonQuery();
-                                            System.Diagnostics.Debug.WriteLine($"?? Migrated {migratedRows} snippets from old table");
                                         }
                                         
-                                        // Видаляємо backup таблицю
                                         string dropBackupQuery = "DROP TABLE Snippets_backup";
                                         using (var dropBackupCommand = new MySqlCommand(dropBackupQuery, connection))
                                         {
                                             dropBackupCommand.ExecuteNonQuery();
                                         }
                                     }
-                                    catch (Exception migrateEx)
+                                    catch (Exception)
                                     {
-                                        System.Diagnostics.Debug.WriteLine($"?? Migration failed: {migrateEx.Message}");
-                                        // Залишаємо backup таблицю на всякий випадок
+                                        // Migration failed
                                     }
                                 }
                             }
                         }
-                        catch (Exception structureEx)
+                        catch (Exception)
                         {
-                            System.Diagnostics.Debug.WriteLine($"?? Error checking table structure: {structureEx.Message}");
-                            // Якщо не можемо перевірити структуру, просто залишаємо існуючу таблицю
                             return;
                         }
                     }
                     else
                     {
-                        // Таблиця не існує - створюємо нову
-                        System.Diagnostics.Debug.WriteLine("?? Creating new Snippets table...");
                         CreateSnippetsTable(connection);
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? Error in CreateTableIfNotExists: {ex.Message}");
-                // Не кидаємо виключення, щоб не порушувати роботу програми
+                // Silent fail
             }
         }
 
@@ -157,7 +136,6 @@ namespace TextEditorMK.Repositories.Implementations
             using (var command = new MySqlCommand(createTableQuery, connection))
             {
                 command.ExecuteNonQuery();
-                System.Diagnostics.Debug.WriteLine("? Snippets table created successfully with TriggerWord field");
             }
         }
 
@@ -165,8 +143,6 @@ namespace TextEditorMK.Repositories.Implementations
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"?? Adding snippet: {snippet.Name} with trigger: {snippet.Trigger}");
-                
                 using (var connection = _dbHelper.GetConnection())
                 {
                     connection.Open();
@@ -187,18 +163,14 @@ namespace TextEditorMK.Repositories.Implementations
                         command.Parameters.AddWithValue("@LastUsedDate", snippet.LastUsedDate);
                         command.Parameters.AddWithValue("@UsageCount", snippet.UsageCount);
 
-                        System.Diagnostics.Debug.WriteLine($"?? Executing SQL query for snippet: {snippet.Name}");
                         var result = command.ExecuteScalar();
                         snippet.Id = Convert.ToInt32(result);
-                        
-                        System.Diagnostics.Debug.WriteLine($"? Snippet added to DB: {snippet.Name} with ID: {snippet.Id}");
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? MySQL Snippet Add Error for '{snippet.Name}': {ex.Message}");
-                throw; // Прокидаємо помилку для обробки у верхньому рівні
+                throw;
             }
         }
 
@@ -229,13 +201,11 @@ namespace TextEditorMK.Repositories.Implementations
                         command.Parameters.AddWithValue("@UsageCount", snippet.UsageCount);
 
                         command.ExecuteNonQuery();
-                        System.Diagnostics.Debug.WriteLine($"? Snippet updated in DB: {snippet.Name}");
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? MySQL Snippet Update Error: {ex.Message}");
                 throw;
             }
         }
@@ -252,16 +222,13 @@ namespace TextEditorMK.Repositories.Implementations
                     using (var command = new MySqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@Id", id);
-                        int rowsAffected = command.ExecuteNonQuery();
-                        
-                        if (rowsAffected > 0)
-                            System.Diagnostics.Debug.WriteLine($"? Snippet deleted from DB: ID {id}");
+                        command.ExecuteNonQuery();
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? MySQL Snippet Delete Error: {ex.Message}");
+                // Silent fail
             }
         }
 
@@ -287,9 +254,9 @@ namespace TextEditorMK.Repositories.Implementations
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? MySQL Snippet GetById Error: {ex.Message}");
+                // Silent fail
             }
             return null;
         }
@@ -313,11 +280,10 @@ namespace TextEditorMK.Repositories.Implementations
                         }
                     }
                 }
-                System.Diagnostics.Debug.WriteLine($"?? Loaded {snippets.Count} snippets from DB");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? MySQL Snippet GetAll Error: {ex.Message}");
+                // Silent fail
             }
             return snippets;
         }
@@ -345,9 +311,9 @@ namespace TextEditorMK.Repositories.Implementations
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? MySQL Snippet GetByLanguage Error: {ex.Message}");
+                // Silent fail
             }
             return snippets;
         }
@@ -375,9 +341,9 @@ namespace TextEditorMK.Repositories.Implementations
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? MySQL Snippet GetByTrigger Error: {ex.Message}");
+                // Silent fail
             }
             return null;
         }
@@ -405,9 +371,9 @@ namespace TextEditorMK.Repositories.Implementations
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? MySQL Snippet GetByCategory Error: {ex.Message}");
+                // Silent fail
             }
             return snippets;
         }
@@ -435,9 +401,9 @@ namespace TextEditorMK.Repositories.Implementations
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Diagnostics.Debug.WriteLine($"? MySQL Snippet GetMostUsed Error: {ex.Message}");
+                // Silent fail
             }
             return snippets;
         }
@@ -448,7 +414,7 @@ namespace TextEditorMK.Repositories.Implementations
             {
                 Id = reader.GetInt32("Id"),
                 Name = reader["Name"] as string ?? string.Empty,
-                Trigger = reader["TriggerWord"] as string ?? string.Empty, // Читаємо з TriggerWord
+                Trigger = reader["TriggerWord"] as string ?? string.Empty, 
                 Language = reader["Language"] as string ?? string.Empty,
                 Description = reader["Description"] as string ?? string.Empty,
                 Code = reader["Code"] as string ?? string.Empty,
